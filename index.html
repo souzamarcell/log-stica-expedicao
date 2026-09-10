@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SysSec Logística | ERP TMS &amp; Expedição</title>
+<style>
+/* ==========================================================================
+   1. RESET & VARIÁVEIS (Design System)
+   ========================================================================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#0B5FFF; --brand-dark:#0A4FD6; --brand-light:#E8F0FF;
+  --ok:#16A34A; --warn:#F59E0B; --danger:#DC2626; --info:#0891B2;
+  --bg:#F4F6F9; --surface:#FFFFFF; --surface-2:#F8FAFC;
+  --text:#1A2233; --text-2:#5A6478; --text-3:#8A93A6;
+  --border:#E4E8F0; --shadow:0 1px 3px rgba(20,30,60,.08),0 1px 2px rgba(20,30,60,.06);
+  --shadow-lg:0 10px 30px rgba(20,30,60,.14);
+  --radius:10px; --radius-sm:6px; --radius-lg:16px;
+  --sidebar-w:264px; --sidebar-w-collapsed:72px; --header-h:64px;
+  --font:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+  --tr:.2s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{
+  --bg:#0F1420; --surface:#171E2C; --surface-2:#1E2636;
+  --text:#E7ECF5; --text-2:#A7B0C4; --text-3:#6E7996;
+  --border:#2A3348; --brand-light:#182640;
+  --shadow:0 1px 3px rgba(0,0,0,.4); --shadow-lg:0 10px 30px rgba(0,0,0,.5);
+}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--text)}
+a{color:var(--brand);text-decoration:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+svg{display:block}
+
+/* ==========================================================================
+   2. LOGIN
+   ========================================================================== */
+#loginScreen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0B1B3A 0%,#0B5FFF 100%);z-index:999}
+.login-card{width:400px;max-width:92vw;background:var(--surface);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);padding:40px 36px;animation:pop .35s ease}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.login-logo .mark{width:42px;height:42px;border-radius:10px;background:var(--brand);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px}
+.login-logo h1{font-size:19px;font-weight:700}
+.login-logo span{display:block;font-size:11px;color:var(--text-3);font-weight:500;letter-spacing:.04em}
+.login-card p.sub{color:var(--text-2);font-size:12.5px;margin:14px 0 24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface-2);transition:var(--tr)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-light)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:var(--radius-sm);
+  font-weight:600;font-size:13.5px;transition:var(--tr);white-space:nowrap}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-block{width:100%}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface-2)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-sm{padding:6px 12px;font-size:12.5px}
+.login-hint{margin-top:16px;font-size:11.5px;color:var(--text-3);background:var(--surface-2);
+  border:1px dashed var(--border);padding:10px 12px;border-radius:var(--radius-sm)}
+.login-error{background:#FEE2E2;color:#991B1B;padding:9px 12px;border-radius:var(--radius-sm);font-size:12.5px;margin-bottom:14px;display:none}
+[data-theme="dark"] .login-error{background:#3A1414;color:#FCA5A5}
+
+/* ==========================================================================
+   3. APP SHELL
+   ========================================================================== */
+#app{display:none;height:100vh;overflow:hidden}
+#app.show{display:flex}
+
+/* --- Sidebar --- */
+#sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;transition:width var(--tr);flex-shrink:0;z-index:60}
+#sidebar.collapsed{width:var(--sidebar-w-collapsed)}
+.sb-brand{height:var(--header-h);display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-brand .mark{width:32px;height:32px;border-radius:8px;background:var(--brand);color:#fff;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+.sb-brand .txt{overflow:hidden;white-space:nowrap}
+.sb-brand .txt b{font-size:13.5px;display:block}
+.sb-brand .txt span{font-size:10px;color:var(--text-3)}
+#sidebar.collapsed .txt{display:none}
+.sb-search{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sb-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface-2);font-size:12.5px}
+.sb-search-wrap{position:relative}
+.sb-search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-3)}
+#sidebar.collapsed .sb-search{display:none}
+.sb-nav{flex:1;overflow-y:auto;padding:8px 10px}
+.sb-cat{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;
+  padding:14px 10px 6px}
+#sidebar.collapsed .sb-cat{display:none}
+.sb-item{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:var(--radius-sm);color:var(--text-2);
+  font-size:13px;font-weight:500;transition:var(--tr);position:relative;margin-bottom:2px}
+.sb-item svg{width:18px;height:18px;flex-shrink:0}
+.sb-item:hover{background:var(--surface-2);color:var(--text)}
+.sb-item.active{background:var(--brand-light);color:var(--brand)}
+.sb-item .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sidebar.collapsed .sb-item .lbl,#sidebar.collapsed .sb-item .badge{display:none}
+.sb-item .badge{margin-left:auto;background:var(--danger);color:#fff;font-size:9.5px;font-weight:700;
+  padding:1px 6px;border-radius:10px}
+.sb-footer{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
+.sb-toggle{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;
+  border-radius:var(--radius-sm);color:var(--text-3);font-size:12px}
+.sb-toggle:hover{background:var(--surface-2)}
+
+/* Tooltip for collapsed sidebar */
+#sidebar.collapsed .sb-item{position:relative}
+#sidebar.collapsed .sb-item:hover::after{content:attr(data-label);position:absolute;left:64px;top:50%;
+  transform:translateY(-50%);background:var(--text);color:var(--bg);padding:5px 10px;border-radius:6px;font-size:11.5px;
+  white-space:nowrap;z-index:80;box-shadow:var(--shadow-lg)}
+
+/* --- Main --- */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:8px;padding:12px 20px;flex-shrink:0}
+.topbar-row{display:flex;align-items:center;gap:14px}
+.topbar-row.row-1{justify-content:flex-start}
+.topbar-row.row-2{justify-content:flex-end}
+#hamburger{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#hamburger:hover{background:var(--surface-2)}
+.breadcrumb{font-size:12.5px;color:var(--text-3);display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.breadcrumb b{color:var(--text);font-size:14.5px;font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+  color:var(--text-2);position:relative}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn svg{width:18px;height:18px}
+.user-chip{display:flex;align-items:center;gap:8px;padding:6px 10px 6px 6px;border-radius:20px;background:var(--surface-2);cursor:pointer}
+.user-chip .av{width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-chip span{font-size:12.5px;font-weight:600;white-space:nowrap}
+#content{flex:1;overflow-y:auto;padding:22px 26px 60px}
+
+/* --- Overlay (mobile sidebar) --- */
+#overlay{position:fixed;inset:0;background:rgba(10,15,30,.5);z-index:55;display:none}
+#overlay.show{display:block}
+
+/* ==========================================================================
+   4. COMPONENTES GERAIS
+   ========================================================================== */
+.page-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.page-head h2{font-size:20px;font-weight:700}
+.page-head p{font-size:12.5px;color:var(--text-2);margin-top:2px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+
+.kpi{display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.kpi .top{display:flex;align-items:center;justify-content:space-between}
+.kpi .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.kpi .ic svg{width:19px;height:19px}
+.kpi .val{font-size:24px;font-weight:800}
+.kpi .lbl{font-size:12px;color:var(--text-2);font-weight:600}
+.kpi .delta{font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:3px}
+.delta.up{color:var(--ok)} .delta.down{color:var(--danger)}
+
+.section-title{font-size:14.5px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-ok{background:#DCFCE7;color:#166534}.badge-warn{background:#FEF3C7;color:#92400E}
+.badge-danger{background:#FEE2E2;color:#991B1B}.badge-info{background:#DBEAFE;color:#1E40AF}
+.badge-muted{background:var(--surface-2);color:var(--text-3)}
+[data-theme="dark"] .badge-ok{background:#0F3320;color:#4ADE80}
+[data-theme="dark"] .badge-warn{background:#3A2E0A;color:#FCD34D}
+[data-theme="dark"] .badge-danger{background:#3A1414;color:#FCA5A5}
+[data-theme="dark"] .badge-info{background:#0F2A4A;color:#93C5FD}
+
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.search-box{position:relative;flex:1;min-width:200px}
+.search-box input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-3)}
+.select-filter{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--text-3);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--brand)}
+tbody td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:hover{background:var(--surface-2)}
+.tbl-wrap{overflow-x:auto}
+.row-actions{display:flex;gap:6px}
+.row-actions button{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+.row-actions button:hover{background:var(--surface-2);color:var(--brand)}
+.row-actions button svg{width:15px;height:15px}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text-3)}
+.empty-state svg{width:52px;height:52px;margin:0 auto 14px;opacity:.35}
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--text-2)}
+.pagination .pgs{display:flex;gap:4px}
+.pagination button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border)}
+.pagination button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,15,30,.55);z-index:1200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:560px;max-width:100%;
+  max-height:88vh;display:flex;flex-direction:column;animation:pop .25s ease}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:16px;font-weight:700}
+.modal-body{padding:20px 22px;overflow-y:auto}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.close-x{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-3)}
+.close-x:hover{background:var(--surface-2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:520px){.form-row{grid-template-columns:1fr}}
+.field textarea{resize:vertical;min-height:70px}
+
+/* Toast */
+#toastArea{position:fixed;bottom:20px;right:20px;z-index:1300;display:flex;flex-direction:column;gap:10px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--brand);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-lg);padding:12px 16px;min-width:260px;font-size:13px;font-weight:600;animation:slidein .25s ease;display:flex;gap:10px;align-items:center}
+.toast.ok{border-left-color:var(--ok)}.toast.warn{border-left-color:var(--warn)}.toast.danger{border-left-color:var(--danger)}
+@keyframes slidein{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto}
+.tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text-2);border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:var(--brand);border-color:var(--brand)}
+.tab:hover{color:var(--brand)}
+
+.timeline{position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--border)}
+.tl-item{position:relative;padding-bottom:20px}
+.tl-item::before{content:'';position:absolute;left:-24px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--brand);border:2px solid var(--surface)}
+.tl-item b{font-size:13px;display:block}
+.tl-item span{font-size:11.5px;color:var(--text-3)}
+
+.progress{height:6px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+.progress > div{height:100%;background:var(--brand);border-radius:6px}
+
+.skel{background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 37%,var(--surface-2) 63%);
+  background-size:400% 100%;animation:sk 1.4s ease infinite;border-radius:6px}
+@keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+@media(max-width:900px){
+  #sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%)}
+  #sidebar.mobile-open{transform:translateX(0)}
+  #sidebar.collapsed{width:var(--sidebar-w)}
+}
+.checklist{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px}
+.checklist label{display:flex;align-items:center;gap:8px;font-size:13px}
+</style>
+</head>
+<body>
+
+<!-- ============================ LOGIN ============================ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="mark">SL</div>
+      <div><h1>SysSec Logística</h1><span>ERP TMS &amp; EXPEDIÇÃO</span></div>
+    </div>
+    <p class="sub">Acesse com suas credenciais corporativas para continuar.</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm" onsubmit="return false;">
+      <div class="field"><label>Usuário</label><input id="loginUser" autocomplete="username" placeholder="Admin"></div>
+      <div class="field"><label>Senha</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <button class="btn btn-primary btn-block" onclick="Auth.login()">Entrar no Sistema</button>
+    </form>
+    <div class="login-hint">Usuário padrão: <b>Admin</b> · Senha: <b>123</b><br>Será solicitada a troca de senha no primeiro acesso.</div>
+  </div>
+</div>
+
+<!-- ============================ APP ============================ -->
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-brand">
+      <div class="mark">SL</div>
+      <div class="txt"><b>SysSec Logística</b><span>ERP Corporativo v1.0</span></div>
+    </div>
+    <div class="sb-search">
+      <div class="sb-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="sbSearch" placeholder="Pesquisar módulos..." oninput="UI.filterMenu(this.value)">
+      </div>
+    </div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-footer">
+      <button class="sb-toggle" onclick="UI.toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 18l6-6-6-6"/></svg>
+        <span class="lbl-collapse">Recolher menu</span>
+      </button>
+    </div>
+  </aside>
+
+  <div id="overlay" onclick="UI.closeMobileSidebar()"></div>
+
+  <div id="main">
+    <header id="topbar">
+      <div class="topbar-row row-1">
+        <button id="hamburger" onclick="UI.toggleMobileSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <div class="breadcrumb"><span id="bcCat">Dashboard</span><span>/</span><b id="bcTitle">Visão Geral</b></div>
+      </div>
+      <div class="topbar-row row-2">
+        <div class="topbar-actions">
+          <button class="icon-btn" title="Tema" onclick="UI.toggleTheme()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+          </button>
+          <button class="icon-btn" title="Alertas" onclick="Router.go('indicadores')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            <span class="badge" id="alertBadge" style="position:absolute;top:2px;right:2px;font-size:9px">0</span>
+          </button>
+          <div class="user-chip" onclick="Router.go('configuracoes')">
+            <div class="av" id="userAv">A</div>
+            <span id="userName">Admin</span>
+          </div>
+          <button class="icon-btn" title="Sair" onclick="Auth.logout()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+    <main id="content"></main>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+<div id="toastArea"></div>
+
+<script>
+/* ==========================================================================
+   MÓDULO: CONFIGURAÇÃO GLOBAL
+   ========================================================================== */
+const CFG = {
+  dbKey: 'syssec_logistica_db_v1',
+  sessionKey: 'syssec_logistica_session',
+  sessionTimeoutMin: 30,
+  appVersion: '1.0.0'
+};
+
+/* ==========================================================================
+   MÓDULO: ÍCONES SVG (helper)
+   ========================================================================== */
+const Icon = {
+  dashboard:'<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>',
+  users:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  truck:'<rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+  box:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  route:'<circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8a4 4 0 000-8h-6a4 4 0 010-8h2"/>',
+  pin:'<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
+  package:'<path d="M16.5 9.4L7.5 4.21"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>',
+  warehouse:'<path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-8h6v8"/>',
+  coin:'<circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9.5a2.5 2.5 0 012.5-2.5h1A2.5 2.5 0 0115 9.5c0 3-6 1.5-6 4.5a2.5 2.5 0 002.5 2.5h1a2.5 2.5 0 002.5-2.5"/>',
+  report:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6M9 9h1"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  backup:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.36.51.51 1.13.42 1.73"/>',
+  help:'<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', edit:'<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  trash:'<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>', check:'<path d="M20 6L9 17l-5-5"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  cog:'<circle cx="12" cy="12" r="9"/>', clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  alert:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/>',
+  fuel:'<path d="M3 22V9l7-6 7 6v13"/><path d="M3 22h14"/><path d="M17 22v-9l3 2v5a2 2 0 01-2 2"/>',
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  globe:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>',
+};
+function ic(name,sz=18){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${sz}" height="${sz}">${Icon[name]||''}</svg>`;}
+
+/* ==========================================================================
+   MÓDULO: PERSISTÊNCIA (DB Layer sobre LocalStorage)
+   ========================================================================== */
+const DB = {
+  data: null,
+  load(){
+    const raw = localStorage.getItem(CFG.dbKey);
+    this.data = raw ? JSON.parse(raw) : this.blank();
+    if(!this.data.version) this.data.version = CFG.appVersion;
+    return this.data;
+  },
+  save(){ localStorage.setItem(CFG.dbKey, JSON.stringify(this.data)); },
+  blank(){
+    return {
+      version: CFG.appVersion,
+      usuarios:[], clientes:[], transportadoras:[], motoristas:[], veiculos:[], rotas:[],
+      centros:[], produtos:[], expedicoes:[], cargas:[], romaneios:[], entregas:[],
+      ocorrencias:[], estoque:[], movEstoque:[], custos:[], auditoria:[],
+      config:{ empresa:'SysSec Tecnologia', tema:'light', moeda:'BRL', sidebarCollapsed:false }
+    };
+  },
+  col(name){ return this.data[name]; },
+  insert(name,obj){
+    obj.id = obj.id || Utils.uid();
+    obj.criadoEm = obj.criadoEm || new Date().toISOString();
+    this.data[name].push(obj); this.save();
+    Audit.log('Inclusão', name, obj.id);
+    return obj;
+  },
+  update(name,id,patch){
+    const arr=this.data[name]; const i=arr.findIndex(x=>x.id===id);
+    if(i>-1){ arr[i]={...arr[i],...patch,atualizadoEm:new Date().toISOString()}; this.save(); Audit.log('Alteração',name,id); }
+  },
+  remove(name,id){
+    this.data[name]=this.data[name].filter(x=>x.id!==id); this.save();
+    Audit.log('Exclusão',name,id);
+  },
+  find(name,id){ return this.data[name].find(x=>x.id===id); }
+};
+
+const Utils = {
+  uid(){ return 'id-'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); },
+  fmtDate(d){ if(!d) return '-'; const dt=new Date(d); return dt.toLocaleDateString('pt-BR'); },
+  fmtDateTime(d){ if(!d) return '-'; const dt=new Date(d); return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); },
+  fmtMoney(v){ return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); },
+  fmtNum(v,d=1){ return (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}); },
+  daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); },
+  rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; },
+  sanitize(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML; },
+  esc(s){ return this.sanitize(s); },
+  async sha256(text){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  },
+  debounce(fn,ms){ let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);} }
+};
+
+/* ==========================================================================
+   MÓDULO: AUDITORIA
+   ========================================================================== */
+const Audit = {
+  log(acao,modulo,refId){
+    if(!DB.data) return;
+    const user = Auth.currentUser ? Auth.currentUser.usuario : 'sistema';
+    DB.data.auditoria.unshift({
+      id:Utils.uid(), usuario:user, acao, modulo, refId,
+      data:new Date().toISOString(), navegador:navigator.userAgent.slice(0,60), ip:'127.0.0.1(local)'
+    });
+    if(DB.data.auditoria.length>500) DB.data.auditoria.length=500;
+    localStorage.setItem(CFG.dbKey, JSON.stringify(DB.data));
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: TOASTS
+   ========================================================================== */
+const Toast = {
+  show(msg,type='info'){
+    const el=document.createElement('div');
+    el.className='toast '+(type==='ok'?'ok':type==='warn'?'warn':type==='danger'?'danger':'');
+    const iconName = type==='ok'?'check':type==='danger'?'alert':type==='warn'?'alert':'check';
+    el.innerHTML = ic(iconName,16)+`<span>${Utils.esc(msg)}</span>`;
+    document.getElementById('toastArea').appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); },3200);
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: AUTENTICAÇÃO
+   ========================================================================== */
+const Auth = {
+  currentUser:null,
+  async ensureAdmin(){
+    if(DB.data.usuarios.length===0){
+      const hash = await Utils.sha256('123');
+      DB.insert('usuarios',{ usuario:'Admin', nome:'Administrador do Sistema', senhaHash:hash,
+        perfil:'Administrador', ativo:true, primeiroAcesso:true, email:'admin@syssec.com.br' });
+    }
+  },
+  async login(){
+    const u = document.getElementById('loginUser').value.trim();
+    const p = document.getElementById('loginPass').value;
+    const err = document.getElementById('loginError');
+    if(!u || !p){ err.style.display='block'; err.textContent='Informe usuário e senha.'; return; }
+    const hash = await Utils.sha256(p);
+    const user = DB.data.usuarios.find(x=>x.usuario.toLowerCase()===u.toLowerCase());
+    if(!user || user.senhaHash!==hash || !user.ativo){
+      err.style.display='block'; err.textContent='Usuário ou senha inválidos.'; return;
+    }
+    err.style.display='none';
+    this.currentUser = user;
+    sessionStorage.setItem(CFG.sessionKey, JSON.stringify({id:user.id, ts:Date.now()}));
+    Audit.log('Login','usuarios',user.id);
+    if(user.primeiroAcesso){ this.forcePasswordChange(); return; }
+    UI.enterApp();
+  },
+  logout(){
+    if(this.currentUser) Audit.log('Logout','usuarios',this.currentUser.id);
+    sessionStorage.removeItem(CFG.sessionKey);
+    this.currentUser=null;
+    document.getElementById('app').classList.remove('show');
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('loginPass').value='';
+  },
+  tryRestoreSession(){
+    const raw = sessionStorage.getItem(CFG.sessionKey);
+    if(!raw) return false;
+    const s = JSON.parse(raw);
+    if(Date.now()-s.ts > CFG.sessionTimeoutMin*60*1000){ sessionStorage.removeItem(CFG.sessionKey); return false; }
+    const user = DB.data.usuarios.find(x=>x.id===s.id);
+    if(!user) return false;
+    this.currentUser=user;
+    s.ts=Date.now(); sessionStorage.setItem(CFG.sessionKey,JSON.stringify(s));
+    return true;
+  },
+  forcePasswordChange(){
+    Modal.open('Troca de Senha Obrigatória', `
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:16px">Por segurança, defina uma nova senha antes de continuar.</p>
+      <div class="field"><label>Nova senha</label><input type="password" id="newPass1"></div>
+      <div class="field"><label>Confirmar nova senha</label><input type="password" id="newPass2"></div>
+    `, [{label:'Definir e Entrar',cls:'btn-primary',action:async ()=>{
+        const p1=document.getElementById('newPass1').value, p2=document.getElementById('newPass2').value;
+        if(p1.length<3){ Toast.show('A senha deve ter ao menos 3 caracteres.','warn'); return false; }
+        if(p1!==p2){ Toast.show('As senhas não conferem.','danger'); return false; }
+        const hash = await Utils.sha256(p1);
+        DB.update('usuarios', this.currentUser.id, {senhaHash:hash, primeiroAcesso:false});
+        this.currentUser = DB.find('usuarios', this.currentUser.id);
+        Toast.show('Senha alterada com sucesso.','ok');
+        UI.enterApp();
+        return true;
+      }}], false);
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: CRUD GENÉRICO (Componente reutilizável)
+   ========================================================================== */
+const Crud = {
+  state:{}, // por collection: {page, sort, dir, search, filter}
+  getState(col){
+    if(!this.state[col]) this.state[col]={page:1,sort:null,dir:1,search:'',filter:''};
+    return this.state[col];
+  },
+  render(cfg){
+    const st = this.getState(cfg.col);
+    const pageSize = cfg.pageSize||8;
+    let rows = [...DB.col(cfg.col)];
+    if(st.search){
+      const q=st.search.toLowerCase();
+      rows = rows.filter(r=> cfg.columns.some(c=> String(r[c.key]??'').toLowerCase().includes(q)));
+    }
+    if(st.filter && cfg.filterField){ rows = rows.filter(r=> String(r[cfg.filterField])===st.filter); }
+    if(st.sort){ rows.sort((a,b)=>{ const A=a[st.sort]??'', B=b[st.sort]??''; return (A>B?1:A<B?-1:0)*st.dir; }); }
+    const total = rows.length;
+    const pages = Math.max(1,Math.ceil(total/pageSize));
+    st.page = Math.min(st.page,pages);
+    const pageRows = rows.slice((st.page-1)*pageSize, st.page*pageSize);
+
+    const filterOptions = cfg.filterOptions ? `<select class="select-filter" onchange="Crud.setFilter('${cfg.col}',this.value)">
+        <option value="">Todos</option>${cfg.filterOptions.map(o=>`<option value="${o}" ${st.filter===o?'selected':''}>${o}</option>`).join('')}
+      </select>` : '';
+
+    return `
+      <div class="page-head">
+        <div><h2>${ic(cfg.icon,20)} ${cfg.title}</h2><p>${cfg.subtitle||''}</p></div>
+        <button class="btn btn-primary" onclick="Crud.openForm('${cfg.col}')">${ic('plus',16)} Novo Registro</button>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <div class="search-box">${ic('search',15)}<input placeholder="Pesquisar em ${cfg.title.toLowerCase()}..." value="${Utils.esc(st.search)}" oninput="Crud.setSearch('${cfg.col}',this.value)"></div>
+          ${filterOptions}
+          <button class="btn btn-ghost btn-sm" onclick="Crud.exportCsv('${cfg.col}')">${ic('report',14)} Exportar CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.print()">Imprimir</button>
+        </div>
+        <div class="tbl-wrap">
+        ${total===0 ? `<div class="empty-state">${ic('box',48)}<p>Nenhum registro encontrado. Clique em "Novo Registro" para começar.</p></div>` : `
+        <table>
+          <thead><tr>
+            ${cfg.columns.map(c=>`<th onclick="Crud.setSort('${cfg.col}','${c.key}')">${c.label} ${st.sort===c.key?(st.dir===1?'▲':'▼'):''}</th>`).join('')}
+            <th style="width:100px">Ações</th>
+          </tr></thead>
+          <tbody>
+            ${pageRows.map(r=>`<tr>
+              ${cfg.columns.map(c=>`<td>${c.render?c.render(r):Utils.esc(r[c.key]??'-')}</td>`).join('')}
+              <td><div class="row-actions">
+                <button title="Visualizar" onclick="Crud.view('${cfg.col}','${r.id}')">${ic('eye',15)}</button>
+                <button title="Editar" onclick="Crud.openForm('${cfg.col}','${r.id}')">${ic('edit',15)}</button>
+                <button title="Excluir" onclick="Crud.del('${cfg.col}','${r.id}','${cfg.title}')">${ic('trash',15)}</button>
+              </div></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`}
+        </div>
+        ${total>0?`<div class="pagination">
+          <span>Mostrando ${(st.page-1)*pageSize+1}-${Math.min(st.page*pageSize,total)} de ${total} registros</span>
+          <div class="pgs">${Array.from({length:pages}).map((_,i)=>`<button class="${st.page===i+1?'active':''}" onclick="Crud.setPage('${cfg.col}',${i+1})">${i+1}</button>`).join('')}</div>
+        </div>`:''}
+      </div>`;
+  },
+  setSearch(col,v){ this.getState(col).search=v; this.getState(col).page=1; Router.go(UI.currentKey); document.querySelector('.search-box input')?.focus(); },
+  setFilter(col,v){ this.getState(col).filter=v; this.getState(col).page=1; Router.go(UI.currentKey); },
+  setSort(col,key){ const s=this.getState(col); if(s.sort===key) s.dir*=-1; else {s.sort=key;s.dir=1;} Router.go(UI.currentKey); },
+  setPage(col,p){ this.getState(col).page=p; Router.go(UI.currentKey); },
+  exportCsv(col){
+    const rows = DB.col(col);
+    if(!rows.length){ Toast.show('Não há dados para exportar.','warn'); return; }
+    const keys = Object.keys(rows[0]).filter(k=>k!=='id');
+    const csv = [keys.join(';'), ...rows.map(r=>keys.map(k=>JSON.stringify(r[k]??'')).join(';'))].join('\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=col+'.csv'; a.click();
+    Toast.show('Exportação CSV gerada.','ok');
+  },
+  openForm(col,id){
+    const cfg = ModuleDefs[col]; const item = id ? DB.find(col,id) : {};
+    const html = `<form id="crudForm"><div class="form-row">
+      ${cfg.fields.map(f=>Crud.renderField(f,item)).join('')}
+    </div></form>`;
+    Modal.open((id?'Editar ':'Novo(a) ')+cfg.singular, html, [
+      {label:'Cancelar',cls:'btn-ghost'},
+      {label:id?'Salvar Alterações':'Cadastrar', cls:'btn-primary', action:()=>{
+        const data={};
+        cfg.fields.forEach(f=>{
+          const el = document.getElementById('f_'+f.key);
+          if(!el) return;
+          data[f.key] = f.type==='checkbox' ? el.checked : (f.type==='number' ? Number(el.value||0) : el.value);
+        });
+        const required = cfg.fields.filter(f=>f.required);
+        for(const f of required){ if(!data[f.key] && data[f.key]!==0){ Toast.show(`O campo "${f.label}" é obrigatório.`,'warn'); return false; } }
+        if(id){ DB.update(col,id,data); Toast.show(cfg.singular+' atualizado(a) com sucesso.','ok'); }
+        else{ DB.insert(col,data); Toast.show(cfg.singular+' cadastrado(a) com sucesso.','ok'); }
+        Router.go(UI.currentKey);
+      }}
+    ]);
+  },
+  renderField(f,item){
+    const val = item[f.key] ?? f.default ?? '';
+    const wide = f.wide ? 'style="grid-column:1/-1"' : '';
+    if(f.type==='select'){
+      return `<div class="field" ${wide}><label>${f.label}${f.required?' *':''}</label>
+        <select id="f_${f.key}">${f.options.map(o=>`<option value="${o.value??o}" ${String(val)===String(o.value??o)?'selected':''}>${o.label??o}</option>`).join('')}</select></div>`;
+    }
+    if(f.type==='textarea'){
+      return `<div class="field" ${wide}><label>${f.label}</label><textarea id="f_${f.key}">${Utils.esc(val)}</textarea></div>`;
+    }
+    if(f.type==='checkbox'){
+      return `<div class="field" ${wide}><label>${f.label}</label><label style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <input type="checkbox" id="f_${f.key}" ${val?'checked':''} style="width:16px;height:16px"> <span style="font-size:12.5px;color:var(--text-2)">${f.hint||'Ativo'}</span></label></div>`;
+    }
+    return `<div class="field" ${wide}><label>${f.label}${f.required?' *':''}</label>
+      <input id="f_${f.key}" type="${f.type||'text'}" value="${Utils.esc(val)}" ${f.step?`step="${f.step}"`:''} placeholder="${f.placeholder||''}"></div>`;
+  },
+  view(col,id){
+    const cfg = ModuleDefs[col]; const item = DB.find(col,id);
+    const html = `<div class="grid grid-2">${cfg.fields.map(f=>`
+      <div><label style="font-size:11px;color:var(--text-3);font-weight:700;text-transform:uppercase">${f.label}</label>
+      <div style="font-size:14px;margin-top:3px">${item[f.key]!==undefined && item[f.key]!==''? Utils.esc(item[f.key]) : '-'}</div></div>`).join('')}</div>
+      <p style="margin-top:16px;font-size:11.5px;color:var(--text-3)">Criado em ${Utils.fmtDateTime(item.criadoEm)}${item.atualizadoEm?' · Atualizado em '+Utils.fmtDateTime(item.atualizadoEm):''}</p>`;
+    Modal.open(cfg.singular+' — Detalhes', html, [{label:'Fechar',cls:'btn-ghost'},{label:'Editar',cls:'btn-primary',action:()=>{Crud.openForm(col,id);return true;}}]);
+  },
+  del(col,id,title){
+    Modal.confirm('Excluir registro', `Tem certeza que deseja excluir este registro de ${title}? Esta ação não pode ser desfeita.`, ()=>{
+      DB.remove(col,id); Toast.show('Registro excluído.','ok'); Router.go(UI.currentKey);
+    });
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: MODAL
+   ========================================================================== */
+const Modal = {
+  onConfirm:null,
+  open(title, bodyHtml, actions=[{label:'Fechar',cls:'btn-ghost',action:()=>true}], closable=true){
+    const box = document.getElementById('modalBox');
+    box.innerHTML = `
+      <div class="modal-head"><h3>${Utils.esc(title)}</h3>
+        ${closable?`<button class="close-x" onclick="Modal.close()">${ic('x',16)}</button>`:''}
+      </div>
+      <div class="modal-body">${bodyHtml}</div>
+      <div class="modal-foot" id="modalFoot"></div>`;
+    const foot = document.getElementById('modalFoot');
+    actions.forEach(a=>{
+      const b=document.createElement('button');
+      b.className='btn '+(a.cls||'btn-ghost'); b.textContent=a.label;
+      b.onclick=async ()=>{ const r = a.action ? await a.action() : true; if(r!==false) Modal.close(); };
+      foot.appendChild(b);
+    });
+    document.getElementById('modalOverlay').classList.add('show');
+  },
+  close(){ document.getElementById('modalOverlay').classList.remove('show'); },
+  confirm(title,msg,onYes){
+    this.open(title, `<p style="font-size:13.5px;color:var(--text-2)">${Utils.esc(msg)}</p>`,
+      [{label:'Cancelar',cls:'btn-ghost'},{label:'Confirmar',cls:'btn-danger',action:onYes}]);
+  }
+};
+document.getElementById('modalOverlay').addEventListener('click',e=>{ if(e.target.id==='modalOverlay') Modal.close(); });
+
+/* ==========================================================================
+   MÓDULO: MENU / NAVEGAÇÃO
+   ========================================================================== */
+const MENU = [
+  { cat:'Operação', items:[
+    {key:'dashboard', label:'Dashboard', icon:'dashboard'},
+  ]},
+  { cat:'Cadastros', items:[
+    {key:'clientes', label:'Clientes', icon:'users'},
+    {key:'transportadoras', label:'Transportadoras', icon:'truck'},
+    {key:'motoristas', label:'Motoristas', icon:'users'},
+    {key:'veiculos', label:'Veículos', icon:'truck'},
+    {key:'rotas', label:'Rotas', icon:'route'},
+    {key:'centros', label:'Centros de Distribuição', icon:'warehouse'},
+  ]},
+  { cat:'Logística', items:[
+    {key:'expedicao', label:'Expedição', icon:'box'},
+    {key:'transporte', label:'Transporte (TMS)', icon:'truck'},
+    {key:'entregas', label:'Entregas', icon:'package'},
+    {key:'roteirizacao', label:'Roteirização', icon:'route'},
+    {key:'rastreamento', label:'Rastreamento', icon:'pin'},
+  ]},
+  { cat:'Armazém', items:[
+    {key:'estoque', label:'Estoque', icon:'warehouse'},
+  ]},
+  { cat:'Financeiro', items:[
+    {key:'custos', label:'Custos Logísticos', icon:'coin'},
+  ]},
+  { cat:'Gestão', items:[
+    {key:'relatorios', label:'Relatórios', icon:'report'},
+    {key:'indicadores', label:'Indicadores', icon:'chart'},
+    {key:'auditoria', label:'Auditoria', icon:'shield'},
+  ]},
+  { cat:'Sistema', items:[
+    {key:'backup', label:'Backup e Restore', icon:'backup'},
+    {key:'configuracoes', label:'Configurações', icon:'settings'},
+    {key:'ajuda', label:'Ajuda', icon:'help'},
+  ]},
+];
+
+const UI = {
+  currentKey:'dashboard',
+  buildMenu(){
+    const nav = document.getElementById('sbNav');
+    nav.innerHTML = MENU.map(cat=>`
+      <div class="sb-cat">${cat.cat}</div>
+      ${cat.items.map(it=>`
+        <div class="sb-item" data-key="${it.key}" data-label="${it.label}" onclick="Router.go('${it.key}')">
+          ${ic(it.icon,18)}<span class="lbl">${it.label}</span>
+        </div>`).join('')}
+    `).join('');
+  },
+  setActive(key){
+    document.querySelectorAll('.sb-item').forEach(el=>el.classList.toggle('active', el.dataset.key===key));
+    UI.closeMobileSidebar();
+  },
+  filterMenu(q){
+    q=q.toLowerCase();
+    document.querySelectorAll('.sb-item').forEach(el=>{
+      el.style.display = el.dataset.label.toLowerCase().includes(q) ? 'flex':'none';
+    });
+  },
+  toggleSidebar(){
+    const sb=document.getElementById('sidebar');
+    sb.classList.toggle('collapsed');
+    DB.data.config.sidebarCollapsed = sb.classList.contains('collapsed');
+    DB.save();
+  },
+  toggleMobileSidebar(){
+    if(window.innerWidth<=900){
+      document.getElementById('sidebar').classList.toggle('mobile-open');
+      document.getElementById('overlay').classList.toggle('show');
+    } else { UI.toggleSidebar(); }
+  },
+  closeMobileSidebar(){
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('overlay').classList.remove('show');
+  },
+  toggleTheme(){
+    const html=document.documentElement;
+    const cur = html.getAttribute('data-theme')==='dark'?'light':'dark';
+    html.setAttribute('data-theme',cur);
+    DB.data.config.tema=cur; DB.save();
+  },
+  applyTheme(){
+    document.documentElement.setAttribute('data-theme', DB.data.config.tema||'light');
+  },
+  enterApp(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').classList.add('show');
+    document.getElementById('userName').textContent = Auth.currentUser.nome.split(' ')[0];
+    document.getElementById('userAv').textContent = Auth.currentUser.nome.slice(0,1).toUpperCase();
+    if(DB.data.config.sidebarCollapsed) document.getElementById('sidebar').classList.add('collapsed');
+    UI.buildMenu();
+    UI.updateAlertBadge();
+    Router.go('dashboard');
+  },
+  updateAlertBadge(){
+    const n = (DB.data.entregas||[]).filter(e=>e.status==='Atrasada').length + (DB.data.veiculos||[]).filter(v=>v.docVencido).length;
+    document.getElementById('alertBadge').textContent = n;
+    document.getElementById('alertBadge').style.display = n>0 ? 'flex':'none';
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: DEFINIÇÕES DE CADASTRO (ModuleDefs)
+   ========================================================================== */
+const ModuleDefs = {
+  clientes:{ singular:'Cliente', fields:[
+    {key:'nome',label:'Razão Social / Nome',required:true},
+    {key:'documento',label:'CNPJ/CPF',required:true},
+    {key:'contato',label:'Contato'},
+    {key:'telefone',label:'Telefone'},
+    {key:'email',label:'E-mail',type:'email'},
+    {key:'cidade',label:'Cidade'},
+    {key:'uf',label:'UF'},
+    {key:'endereco',label:'Endereço',wide:true},
+    {key:'ativo',label:'Status',type:'checkbox',hint:'Cliente ativo',default:true},
+  ]},
+  transportadoras:{ singular:'Transportadora', fields:[
+    {key:'nome',label:'Nome',required:true},{key:'cnpj',label:'CNPJ'},
+    {key:'contato',label:'Contato'},{key:'telefone',label:'Telefone'},
+    {key:'tipo',label:'Tipo',type:'select',options:['Frota Própria','Terceirizada','Agregado']},
+    {key:'avaliacao',label:'Avaliação (1-5)',type:'number',step:'1'},
+    {key:'ativo',label:'Status',type:'checkbox',default:true},
+  ]},
+  motoristas:{ singular:'Motorista', fields:[
+    {key:'nome',label:'Nome Completo',required:true},{key:'cnh',label:'CNH'},
+    {key:'categoria',label:'Categoria CNH',type:'select',options:['A','B','C','D','E']},
+    {key:'telefone',label:'Telefone'},{key:'validadeCnh',label:'Validade CNH',type:'date'},
+    {key:'transportadora',label:'Transportadora'},
+    {key:'ativo',label:'Status',type:'checkbox',default:true},
+  ]},
+  veiculos:{ singular:'Veículo', fields:[
+    {key:'placa',label:'Placa',required:true},{key:'modelo',label:'Modelo'},
+    {key:'tipo',label:'Tipo',type:'select',options:['Van','Caminhão Toco','Caminhão Truck','Carreta','Utilitário']},
+    {key:'capacidadeKg',label:'Capacidade (kg)',type:'number'},
+    {key:'ano',label:'Ano',type:'number'},
+    {key:'docVencido',label:'Documento vencido',type:'checkbox'},
+    {key:'status',label:'Status',type:'select',options:['Disponível','Em Rota','Manutenção']},
+  ]},
+  rotas:{ singular:'Rota', fields:[
+    {key:'nome',label:'Nome da Rota',required:true},{key:'origem',label:'Origem'},
+    {key:'destino',label:'Destino'},{key:'distanciaKm',label:'Distância (km)',type:'number'},
+    {key:'tempoEstimadoH',label:'Tempo Estimado (h)',type:'number',step:'0.1'},
+    {key:'regiao',label:'Região'},
+  ]},
+  centros:{ singular:'Centro de Distribuição', fields:[
+    {key:'nome',label:'Nome',required:true},{key:'cidade',label:'Cidade'},{key:'uf',label:'UF'},
+    {key:'capacidadeM3',label:'Capacidade (m³)',type:'number'},{key:'responsavel',label:'Responsável'},
+  ]},
+  entregas:{ singular:'Entrega', fields:[
+    {key:'codigo',label:'Código',required:true},{key:'cliente',label:'Cliente',required:true},
+    {key:'endereco',label:'Endereço de Entrega',wide:true},
+    {key:'dataPrevista',label:'Data Prevista',type:'date'},
+    {key:'status',label:'Status',type:'select',options:['Pendente','Em Trânsito','Concluída','Atrasada']},
+    {key:'leadTimeDias',label:'Lead Time (dias)',type:'number',step:'0.1'},
+  ]},
+  estoque:{ singular:'Item de Estoque', fields:[
+    {key:'produto',label:'Produto',required:true},{key:'localizacao',label:'Localização (Endereçamento)'},
+    {key:'quantidade',label:'Quantidade Atual',type:'number'},
+    {key:'minimo',label:'Estoque Mínimo',type:'number'},{key:'maximo',label:'Estoque Máximo',type:'number'},
+  ]},
+  custos:{ singular:'Custo', fields:[
+    {key:'tipo',label:'Tipo',type:'select',options:['Frete','Combustível','Pedágio','Manutenção','Motoristas','Depreciação','Operacional']},
+    {key:'descricao',label:'Descrição',wide:true},{key:'veiculo',label:'Veículo'},
+    {key:'valor',label:'Valor (R$)',type:'number',step:'0.01',required:true},{key:'data',label:'Data',type:'date'},
+  ]},
+  cargas:{ singular:'Viagem', fields:[
+    {key:'codigo',label:'Código',required:true},{key:'veiculo',label:'Veículo'},{key:'motorista',label:'Motorista'},
+    {key:'rota',label:'Rota'},{key:'pesoKg',label:'Peso (kg)',type:'number'},{key:'km',label:'Km',type:'number'},
+    {key:'frete',label:'Valor do Frete (R$)',type:'number',step:'0.01'},
+    {key:'status',label:'Status',type:'select',options:['Programada','Em Andamento','Concluída']},
+  ]},
+  expedicoes:{ singular:'Expedição', fields:[
+    {key:'numero',label:'Número',required:true},{key:'cliente',label:'Cliente'},{key:'pedido',label:'Pedido'},
+    {key:'volumes',label:'Volumes',type:'number'},{key:'data',label:'Data',type:'date'},
+    {key:'etapa',label:'Etapa',type:'select',options:['Separação','Conferência','Romaneio','Liberado']},
+  ]},
+  usuarios:{ singular:'Usuário', fields:[
+    {key:'nome',label:'Nome',required:true},{key:'usuario',label:'Usuário',required:true},
+    {key:'email',label:'E-mail'},
+    {key:'perfil',label:'Perfil',type:'select',options:['Administrador','Logística','Expedição','Transporte','Motorista','Supervisor','Estoque','Conferente','Consulta']},
+    {key:'ativo',label:'Ativo',type:'checkbox',default:true},
+  ]},
+};
+
+/* Colunas exibidas nas tabelas de cada módulo */
+const ModuleCols = {
+  clientes:[{key:'nome',label:'Cliente'},{key:'cidade',label:'Cidade'},{key:'telefone',label:'Telefone'},
+    {key:'ativo',label:'Status',render:r=>r.ativo?`<span class="badge badge-ok">Ativo</span>`:`<span class="badge badge-muted">Inativo</span>`}],
+  transportadoras:[{key:'nome',label:'Nome'},{key:'tipo',label:'Tipo'},{key:'contato',label:'Contato'},
+    {key:'avaliacao',label:'Avaliação',render:r=>'⭐'.repeat(Math.min(5,r.avaliacao||0))}],
+  motoristas:[{key:'nome',label:'Nome'},{key:'cnh',label:'CNH'},{key:'categoria',label:'Categoria'},
+    {key:'ativo',label:'Status',render:r=>r.ativo?`<span class="badge badge-ok">Ativo</span>`:`<span class="badge badge-muted">Inativo</span>`}],
+  veiculos:[{key:'placa',label:'Placa'},{key:'modelo',label:'Modelo'},{key:'tipo',label:'Tipo'},
+    {key:'status',label:'Status',render:r=>`<span class="badge ${r.status==='Disponível'?'badge-ok':r.status==='Em Rota'?'badge-info':'badge-warn'}">${r.status||'-'}</span>`}],
+  rotas:[{key:'nome',label:'Rota'},{key:'origem',label:'Origem'},{key:'destino',label:'Destino'},{key:'distanciaKm',label:'Distância (km)'}],
+  centros:[{key:'nome',label:'Centro'},{key:'cidade',label:'Cidade'},{key:'uf',label:'UF'},{key:'capacidadeM3',label:'Capacidade m³'}],
+  usuarios:[{key:'nome',label:'Nome'},{key:'usuario',label:'Usuário'},{key:'perfil',label:'Perfil'},
+    {key:'ativo',label:'Status',render:r=>r.ativo?`<span class="badge badge-ok">Ativo</span>`:`<span class="badge badge-muted">Inativo</span>`}],
+};
+
+/* ==========================================================================
+   MÓDULO: GRÁFICOS SVG (helper simples, sem libs externas)
+   ========================================================================== */
+const Chart = {
+  line(values,w=560,h=140,color='var(--brand)'){
+    if(!values.length) return '';
+    const max=Math.max(...values,1), min=Math.min(...values,0);
+    const step=w/(values.length-1||1);
+    const pts=values.map((v,i)=>`${i*step},${h-((v-min)/(max-min||1))*h}`).join(' ');
+    const area = `0,${h} ${pts} ${w},${h}`;
+    return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+      <polygon points="${area}" fill="${color}" opacity="0.12"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${values.map((v,i)=>`<circle cx="${i*step}" cy="${h-((v-min)/(max-min||1))*h}" r="3" fill="${color}"/>`).join('')}
+    </svg>`;
+  },
+  bars(labels,values,w=560,h=160,color='var(--brand)'){
+    const max=Math.max(...values,1); const bw = w/values.length*0.6; const gap=w/values.length;
+    return `<svg viewBox="0 0 ${w} ${h+22}" width="100%" height="${h+22}">
+      ${values.map((v,i)=>{
+        const bh=(v/max)*(h-10); const x=i*gap+(gap-bw)/2;
+        return `<rect x="${x}" y="${h-bh}" width="${bw}" height="${bh}" rx="4" fill="${color}"/>
+        <text x="${x+bw/2}" y="${h+16}" font-size="9.5" text-anchor="middle" fill="var(--text-3)">${labels[i]}</text>`;
+      }).join('')}
+    </svg>`;
+  },
+  donut(segments,size=160){ // segments: [{label,value,color}]
+    const total = segments.reduce((s,x)=>s+x.value,0)||1;
+    let acc=0; const r=size/2-14, cx=size/2, cy=size/2, C=2*Math.PI*r;
+    const arcs = segments.map(s=>{
+      const frac=s.value/total, dash=frac*C;
+      const el = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="18"
+        stroke-dasharray="${dash} ${C-dash}" stroke-dashoffset="${-acc*C}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      acc+=frac; return el;
+    }).join('');
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${arcs}
+      <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">${total}</text></svg>`;
+  }
+};
+
+/* ==========================================================================
+   MÓDULOS DE AÇÃO: Expedição, Transporte, Roteirização, Backup, Configurações
+   ========================================================================== */
+const Expedicao = {
+  etapas:['Separação','Conferência','Romaneio','Liberado'],
+  etapaBadge(etapa){
+    const cls = etapa==='Liberado'?'badge-ok':etapa==='Romaneio'?'badge-info':etapa==='Conferência'?'badge-warn':'badge-muted';
+    return `<span class="badge ${cls}">${etapa}</span>`;
+  },
+  novo(){ Crud.openForm('expedicoes'); },
+  avancar(id){
+    const item = DB.find('expedicoes',id);
+    const idx = this.etapas.indexOf(item.etapa);
+    if(idx<this.etapas.length-1){ DB.update('expedicoes',id,{etapa:this.etapas[idx+1]}); Toast.show('Expedição avançou para: '+this.etapas[idx+1],'ok'); Router.go('expedicao'); }
+    else Toast.show('Expedição já está na etapa final (Liberado).','info');
+  },
+  romaneio(id){
+    const item = DB.find('expedicoes',id);
+    Modal.open('Romaneio de Expedição #'+item.numero, `
+      <p style="font-size:13px;line-height:1.9">
+      <b>Cliente:</b> ${Utils.esc(item.cliente)}<br>
+      <b>Pedido:</b> ${Utils.esc(item.pedido)}<br>
+      <b>Volumes:</b> ${item.volumes}<br>
+      <b>Data:</b> ${Utils.fmtDate(item.data)}<br>
+      <b>Etapa atual:</b> ${item.etapa}</p>`,[{label:'Fechar',cls:'btn-ghost'},{label:'Imprimir',cls:'btn-primary',action:()=>{window.print();return false;}}]);
+  }
+};
+
+const Transporte = {
+  novaViagem(){ Crud.openForm('cargas'); }
+};
+
+const Roteirizacao = {
+  simular(){
+    const rotas = DB.data.rotas;
+    if(!rotas.length){ Toast.show('Cadastre rotas antes de simular.','warn'); return; }
+    const otimizada = [...rotas].sort((a,b)=>(a.distanciaKm||0)-(b.distanciaKm||0)).slice(0,5);
+    Modal.open('Simulação de Rota Otimizada', `
+      <p style="font-size:12.5px;color:var(--text-2);margin-bottom:12px">Sequenciamento sugerido com base na menor distância acumulada:</p>
+      <ol style="padding-left:18px;font-size:13px;line-height:2">
+        ${otimizada.map(r=>`<li><b>${Utils.esc(r.nome)}</b> — ${Utils.esc(r.origem||'-')} → ${Utils.esc(r.destino||'-')} (${r.distanciaKm||0} km)</li>`).join('')}
+      </ol>`,[{label:'Fechar',cls:'btn-ghost'}]);
+  }
+};
+
+const BackupMod = {
+  exportar(){
+    const payload = { exportadoEm:new Date().toISOString(), versao:CFG.appVersion, dados:DB.data };
+    const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='backup-logistica-'+Date.now()+'.json'; a.click();
+    Audit.log('Backup','sistema','-');
+    Toast.show('Backup exportado com sucesso.','ok');
+  },
+  restaurar(){
+    const file = document.getElementById('restoreFile').files[0];
+    if(!file){ Toast.show('Selecione um arquivo de backup.','warn'); return; }
+    Modal.confirm('Restaurar Backup','Esta ação substituirá TODOS os dados atuais pelos dados do arquivo selecionado. Deseja continuar?', ()=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        try{
+          const parsed = JSON.parse(e.target.result);
+          if(!parsed.dados){ Toast.show('Arquivo de backup inválido.','danger'); return; }
+          DB.data = parsed.dados; DB.save();
+          Audit.log('Restore','sistema','-');
+          Toast.show('Backup restaurado com sucesso.','ok');
+          UI.applyTheme(); Router.go('backup');
+        }catch(err){ Toast.show('Erro ao ler o arquivo de backup.','danger'); }
+      };
+      reader.readAsText(file);
+    });
+  }
+};
+
+const ConfigMod = {
+  salvar(){
+    DB.data.config.empresa = document.getElementById('cfgEmpresa').value;
+    DB.data.config.moeda = document.getElementById('cfgMoeda').value;
+    DB.save(); Toast.show('Configurações salvas.','ok');
+  },
+  trocarSenha(){
+    Modal.open('Alterar Senha', `
+      <div class="field"><label>Nova senha</label><input type="password" id="newPass1"></div>
+      <div class="field"><label>Confirmar nova senha</label><input type="password" id="newPass2"></div>
+    `,[{label:'Cancelar',cls:'btn-ghost'},{label:'Salvar',cls:'btn-primary',action:async ()=>{
+      const p1=document.getElementById('newPass1').value, p2=document.getElementById('newPass2').value;
+      if(p1.length<3){ Toast.show('Senha muito curta.','warn'); return false; }
+      if(p1!==p2){ Toast.show('As senhas não conferem.','danger'); return false; }
+      const hash = await Utils.sha256(p1);
+      DB.update('usuarios',Auth.currentUser.id,{senhaHash:hash});
+      Toast.show('Senha alterada com sucesso.','ok');
+    }}]);
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: TELAS (Modules) — cada função retorna o HTML do módulo
+   ========================================================================== */
+const Modules = {
+  dashboard(){
+    const D=DB.data;
+    const exp = D.expedicoes.length, ent = D.entregas.length;
+    const entConcluidas = D.entregas.filter(e=>e.status==='Concluída').length;
+    const entAtrasadas = D.entregas.filter(e=>e.status==='Atrasada').length;
+    const entPendentes = D.entregas.filter(e=>e.status==='Pendente'||e.status==='Em Trânsito').length;
+    const otif = ent? Math.round((entConcluidas/ent)*100) : 0;
+    const custoTotal = D.custos.reduce((s,c)=>s+(Number(c.valor)||0),0);
+    const custoPorEntrega = ent? (custoTotal/ent) : 0;
+    const kmTotal = D.transporteViagens? D.transporteViagens.reduce((s,v)=>s+(v.km||0),0): (D.cargas||[]).reduce((s,c)=>s+(c.km||0),0);
+    const veicDisp = D.veiculos.filter(v=>v.status==='Disponível').length;
+    const veicRota = D.veiculos.filter(v=>v.status==='Em Rota').length;
+    const meses = ['Fev','Mar','Abr','Mai','Jun','Jul'];
+    const serieEntregas = [32,38,41,35,47,ent||44];
+
+    return `
+    <div class="page-head"><div><h2>Dashboard Executivo</h2><p>Visão consolidada da operação logística em tempo real</p></div></div>
+    <div class="grid grid-4" style="margin-bottom:18px">
+      <div class="card kpi"><div class="top"><div class="ic" style="background:var(--brand-light);color:var(--brand)">${ic('box',19)}</div>
+        <span class="delta up">▲ 4.2%</span></div><div class="val">${exp}</div><div class="lbl">Expedições Registradas</div></div>
+      <div class="card kpi"><div class="top"><div class="ic" style="background:#DCFCE7;color:#166534">${ic('check',19)}</div>
+        <span class="delta up">▲ ${otif}%</span></div><div class="val">${otif}%</div><div class="lbl">OTIF (On Time In Full)</div></div>
+      <div class="card kpi"><div class="top"><div class="ic" style="background:#FEE2E2;color:#991B1B">${ic('alert',19)}</div>
+        <span class="delta down">▼ ${entAtrasadas}</span></div><div class="val">${entAtrasadas}</div><div class="lbl">Entregas Atrasadas</div></div>
+      <div class="card kpi"><div class="top"><div class="ic" style="background:#DBEAFE;color:#1E40AF">${ic('coin',19)}</div></div>
+        <div class="val">${Utils.fmtMoney(custoPorEntrega)}</div><div class="lbl">Custo Médio por Entrega</div></div>
+    </div>
+    <div class="grid" style="grid-template-columns:2fr 1fr;margin-bottom:18px">
+      <div class="card">
+        <div class="section-title">Evolução de Entregas (últimos 6 meses)</div>
+        ${Chart.line(serieEntregas,560,150)}
+        <div style="display:flex;justify-content:space-between;margin-top:6px">${meses.map(m=>`<span style="font-size:10.5px;color:var(--text-3)">${m}</span>`).join('')}</div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;align-items:center">
+        <div class="section-title" style="width:100%">Status das Entregas</div>
+        ${Chart.donut([
+          {label:'Concluídas',value:entConcluidas||1,color:'#16A34A'},
+          {label:'Pendentes',value:entPendentes,color:'#0891B2'},
+          {label:'Atrasadas',value:entAtrasadas,color:'#DC2626'}
+        ])}
+        <div style="display:flex;gap:14px;margin-top:12px;font-size:11.5px;flex-wrap:wrap;justify-content:center">
+          <span>🟢 Concluídas (${entConcluidas})</span><span>🔵 Pendentes (${entPendentes})</span><span>🔴 Atrasadas (${entAtrasadas})</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="section-title">Frota</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Disponível</span><b style="color:var(--ok)">${veicDisp}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Em Rota</span><b style="color:var(--info)">${veicRota}</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Manutenção</span><b style="color:var(--warn)">${D.veiculos.filter(v=>v.status==='Manutenção').length}</b></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Indicadores Rápidos</div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Lead Time Médio</span><b>${Utils.fmtNum(D.entregas.length? D.entregas.reduce((s,e)=>s+(e.leadTimeDias||2),0)/D.entregas.length:2,1)} dias</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Nível de Serviço</span><b>${otif}%</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span>Km Percorridos (mês)</span><b>${Utils.fmtNum(kmTotal||3200,0)} km</b></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Ocorrências Recentes</div>
+        ${D.ocorrencias.slice(0,3).map(o=>`<div style="font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--border)"><b>${Utils.esc(o.tipo)}</b><br><span style="color:var(--text-3)">${Utils.esc(o.descricao||'').slice(0,40)}</span></div>`).join('') || `<p style="font-size:12.5px;color:var(--text-3)">Nenhuma ocorrência registrada.</p>`}
+      </div>
+    </div>`;
+  },
+
+  clientes(){ return Crud.render({col:'clientes',title:'Clientes',subtitle:'Cadastro de clientes atendidos pela operação logística',icon:'users',columns:ModuleCols.clientes}); },
+  transportadoras(){ return Crud.render({col:'transportadoras',title:'Transportadoras',subtitle:'Frota própria e parceiros terceirizados',icon:'truck',columns:ModuleCols.transportadoras,filterField:'tipo',filterOptions:['Frota Própria','Terceirizada','Agregado']}); },
+  motoristas(){ return Crud.render({col:'motoristas',title:'Motoristas',subtitle:'Cadastro de condutores habilitados',icon:'users',columns:ModuleCols.motoristas}); },
+  veiculos(){ return Crud.render({col:'veiculos',title:'Veículos',subtitle:'Frota utilizada nas operações de transporte',icon:'truck',columns:ModuleCols.veiculos,filterField:'status',filterOptions:['Disponível','Em Rota','Manutenção']}); },
+  rotas(){ return Crud.render({col:'rotas',title:'Rotas',subtitle:'Trajetos padronizados para planejamento logístico',icon:'route',columns:ModuleCols.rotas}); },
+  centros(){ return Crud.render({col:'centros',title:'Centros de Distribuição',subtitle:'Armazéns e CDs da rede logística',icon:'warehouse',columns:ModuleCols.centros}); },
+
+  expedicao(){
+    const D=DB.data;
+    return `
+    <div class="page-head"><div><h2>Expedição</h2><p>Separação, conferência, romaneio e liberação de cargas</p></div>
+      <button class="btn btn-primary" onclick="Expedicao.novo()">${ic('plus',16)} Nova Expedição</button></div>
+    <div class="tabs">
+      <div class="tab active">Fila de Expedição</div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap">
+      ${D.expedicoes.length===0?`<div class="empty-state">${ic('box',48)}<p>Nenhuma expedição registrada.</p></div>`:`
+      <table><thead><tr><th>Nº</th><th>Cliente</th><th>Pedido</th><th>Etapa</th><th>Volumes</th><th>Data</th><th style="width:140px">Ações</th></tr></thead>
+      <tbody>${D.expedicoes.map(e=>`<tr>
+        <td><b>#${e.numero}</b></td><td>${Utils.esc(e.cliente)}</td><td>${Utils.esc(e.pedido)}</td>
+        <td>${Expedicao.etapaBadge(e.etapa)}</td><td>${e.volumes}</td><td>${Utils.fmtDate(e.data)}</td>
+        <td><div class="row-actions">
+          <button title="Avançar etapa" onclick="Expedicao.avancar('${e.id}')">${ic('check',15)}</button>
+          <button title="Gerar Romaneio" onclick="Expedicao.romaneio('${e.id}')">${ic('report',15)}</button>
+          <button title="Excluir" onclick="Crud.del('expedicoes','${e.id}','Expedição')">${ic('trash',15)}</button>
+        </div></td>
+      </tr>`).join('')}</tbody></table>`}
+      </div>
+    </div>`;
+  },
+
+  transporte(){
+    const D=DB.data;
+    return `
+    <div class="page-head"><div><h2>Transporte (TMS)</h2><p>Planejamento de viagens, consolidação de cargas e controle de frete</p></div>
+      <button class="btn btn-primary" onclick="Transporte.novaViagem()">${ic('plus',16)} Nova Viagem</button></div>
+    <div class="grid grid-4" style="margin-bottom:18px">
+      <div class="card kpi"><div class="val">${(D.cargas||[]).length}</div><div class="lbl">Viagens Programadas</div></div>
+      <div class="card kpi"><div class="val">${Utils.fmtMoney((D.cargas||[]).reduce((s,c)=>s+(Number(c.frete)||0),0))}</div><div class="lbl">Total em Fretes</div></div>
+      <div class="card kpi"><div class="val">${Utils.fmtNum((D.cargas||[]).reduce((s,c)=>s+(Number(c.km)||0),0),0)} km</div><div class="lbl">Km Planejados</div></div>
+      <div class="card kpi"><div class="val">${(D.cargas||[]).reduce((s,c)=>s+(Number(c.pesoKg)||0),0).toLocaleString('pt-BR')} kg</div><div class="lbl">Carga Consolidada</div></div>
+    </div>
+    <div class="card"><div class="tbl-wrap">
+    ${(D.cargas||[]).length===0?`<div class="empty-state">${ic('truck',48)}<p>Nenhuma viagem programada.</p></div>`:`
+    <table><thead><tr><th>Viagem</th><th>Veículo</th><th>Motorista</th><th>Rota</th><th>Peso</th><th>Frete</th><th>Status</th><th style="width:80px">Ações</th></tr></thead>
+    <tbody>${D.cargas.map(c=>`<tr>
+      <td><b>${Utils.esc(c.codigo)}</b></td><td>${Utils.esc(c.veiculo)}</td><td>${Utils.esc(c.motorista)}</td>
+      <td>${Utils.esc(c.rota)}</td><td>${c.pesoKg} kg</td><td>${Utils.fmtMoney(c.frete)}</td>
+      <td><span class="badge ${c.status==='Concluída'?'badge-ok':c.status==='Em Andamento'?'badge-info':'badge-warn'}">${c.status}</span></td>
+      <td><div class="row-actions"><button title="Excluir" onclick="Crud.del('cargas','${c.id}','Viagem')">${ic('trash',15)}</button></div></td>
+    </tr>`).join('')}</tbody></table>`}
+    </div></div>`;
+  },
+
+  entregas(){ return Crud.render({col:'entregas',title:'Entregas',subtitle:'Agendamento, comprovação e ocorrências de entrega',icon:'package',
+    columns:[{key:'codigo',label:'Código'},{key:'cliente',label:'Cliente'},{key:'endereco',label:'Endereço'},
+      {key:'dataPrevista',label:'Previsão',render:r=>Utils.fmtDate(r.dataPrevista)},
+      {key:'status',label:'Status',render:r=>`<span class="badge ${r.status==='Concluída'?'badge-ok':r.status==='Atrasada'?'badge-danger':r.status==='Em Trânsito'?'badge-info':'badge-warn'}">${r.status}</span>`}],
+    filterField:'status', filterOptions:['Pendente','Em Trânsito','Concluída','Atrasada']});
+  },
+
+  roteirizacao(){
+    const D=DB.data;
+    return `<div class="page-head"><div><h2>Roteirização</h2><p>Planejamento e otimização de rotas de entrega</p></div>
+      <button class="btn btn-primary" onclick="Roteirizacao.simular()">${ic('route',16)} Simular Rota Otimizada</button></div>
+    <div class="grid grid-3" style="margin-bottom:18px">
+      <div class="card kpi"><div class="val">${D.rotas.length}</div><div class="lbl">Rotas Cadastradas</div></div>
+      <div class="card kpi"><div class="val">${Utils.fmtNum(D.rotas.reduce((s,r)=>s+(Number(r.distanciaKm)||0),0),0)} km</div><div class="lbl">Distância Total das Rotas</div></div>
+      <div class="card kpi"><div class="val">${Utils.fmtNum(D.rotas.length? D.rotas.reduce((s,r)=>s+(Number(r.tempoEstimadoH)||0),0)/D.rotas.length:0,1)} h</div><div class="lbl">Tempo Médio por Rota</div></div>
+    </div>
+    <div class="card"><div class="section-title">Sequenciamento por Região</div>
+      ${Chart.bars(D.rotas.slice(0,6).map(r=>r.regiao||r.destino||'-'), D.rotas.slice(0,6).map(r=>r.distanciaKm||0))}
+    </div>`;
+  },
+
+  rastreamento(){
+    const D=DB.data;
+    const emAndamento = D.entregas.filter(e=>e.status==='Em Trânsito' || e.status==='Pendente').slice(0,6);
+    return `<div class="page-head"><div><h2>Rastreamento</h2><p>Acompanhamento em tempo real (simulado) das entregas</p></div></div>
+    <div class="grid grid-2">
+      ${emAndamento.length===0?`<div class="card empty-state">${ic('pin',48)}<p>Nenhuma entrega em trânsito no momento.</p></div>`:
+      emAndamento.map(e=>`
+      <div class="card">
+        <div class="section-title"><span>${Utils.esc(e.codigo)} — ${Utils.esc(e.cliente)}</span>
+          <span class="badge ${e.status==='Em Trânsito'?'badge-info':'badge-warn'}">${e.status}</span></div>
+        <div class="timeline">
+          <div class="tl-item"><b>Coleta realizada</b><span>${Utils.fmtDate(e.dataPrevista)}</span></div>
+          <div class="tl-item"><b>Em rota para ${Utils.esc(e.endereco||'destino')}</b><span>Localização estimada atualizada há poucos minutos</span></div>
+          <div class="tl-item" style="opacity:.4"><b>Entrega prevista</b><span>${Utils.fmtDate(e.dataPrevista)}</span></div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  },
+
+  estoque(){ return Crud.render({col:'estoque',title:'Estoque Logístico',subtitle:'Controle de posições, endereçamento e níveis mínimos/máximos',icon:'warehouse',
+    columns:[{key:'produto',label:'Produto'},{key:'localizacao',label:'Localização'},{key:'quantidade',label:'Qtd. Atual'},
+      {key:'minimo',label:'Mínimo'},{key:'maximo',label:'Máximo'},
+      {key:'status',label:'Situação',render:r=>{
+        const q=Number(r.quantidade)||0, min=Number(r.minimo)||0;
+        return q<=min?`<span class="badge badge-danger">Abaixo do Mínimo</span>`:`<span class="badge badge-ok">Normal</span>`;
+      }}]});
+  },
+
+  custos(){
+    const D=DB.data;
+    const porTipo = {};
+    D.custos.forEach(c=>{ porTipo[c.tipo]=(porTipo[c.tipo]||0)+(Number(c.valor)||0); });
+    const total = Object.values(porTipo).reduce((a,b)=>a+b,0);
+    const colors=['#0B5FFF','#16A34A','#F59E0B','#DC2626','#0891B2','#7C3AED'];
+    return `<div class="page-head"><div><h2>Custos Logísticos</h2><p>Fretes, combustível, pedágios, manutenção e custos operacionais</p></div>
+      <button class="btn btn-primary" onclick="Crud.openForm('custos')">${ic('plus',16)} Lançar Custo</button></div>
+    <div class="grid" style="grid-template-columns:1fr 1.4fr;margin-bottom:18px">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center">
+        <div class="section-title" style="width:100%">Distribuição por Tipo</div>
+        ${Chart.donut(Object.keys(porTipo).map((k,i)=>({label:k,value:porTipo[k],color:colors[i%colors.length]})))}
+        <div style="margin-top:10px;font-size:11.5px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+          ${Object.keys(porTipo).map((k,i)=>`<span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${colors[i%colors.length]};margin-right:4px"></span>${k}</span>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">Resumo</div>
+        <div style="font-size:26px;font-weight:800;margin-bottom:4px">${Utils.fmtMoney(total)}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:16px">Total de custos logísticos no período</div>
+        ${Object.keys(porTipo).map(k=>`<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${k}</span><b>${Utils.fmtMoney(porTipo[k])}</b></div>`).join('')}
+      </div>
+    </div>
+    ${Crud.render({col:'custos',title:'Lançamentos de Custos',subtitle:'',icon:'coin',
+      columns:[{key:'tipo',label:'Tipo'},{key:'descricao',label:'Descrição'},{key:'veiculo',label:'Veículo'},
+        {key:'valor',label:'Valor',render:r=>Utils.fmtMoney(r.valor)},{key:'data',label:'Data',render:r=>Utils.fmtDate(r.data)}]}).replace('<div class="page-head">','<div class="page-head" style="display:none">')}
+    `;
+  },
+
+  relatorios(){
+    const D=DB.data;
+    const reports = [
+      {key:'expedicoes',label:'Relatório de Expedição',icon:'box',count:D.expedicoes.length},
+      {key:'cargas',label:'Relatório de Transporte',icon:'truck',count:D.cargas.length},
+      {key:'entregas',label:'Relatório de Entregas',icon:'package',count:D.entregas.length},
+      {key:'rotas',label:'Relatório de Roteirização',icon:'route',count:D.rotas.length},
+      {key:'motoristas',label:'Relatório de Motoristas',icon:'users',count:D.motoristas.length},
+      {key:'veiculos',label:'Relatório de Veículos / Frota',icon:'truck',count:D.veiculos.length},
+      {key:'custos',label:'Relatório de Custos',icon:'coin',count:D.custos.length},
+      {key:'estoque',label:'Relatório de Estoque',icon:'warehouse',count:D.estoque.length},
+    ];
+    return `<div class="page-head"><div><h2>Relatórios</h2><p>Geração de relatórios completos com filtros e exportação</p></div></div>
+    <div class="grid grid-4">
+      ${reports.map(r=>`<div class="card">
+        <div class="ic" style="background:var(--brand-light);color:var(--brand);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px">${ic(r.icon,19)}</div>
+        <div style="font-weight:700;font-size:13.5px;margin-bottom:2px">${r.label}</div>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:14px">${r.count} registros disponíveis</div>
+        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="Crud.exportCsv('${r.key}')">${ic('report',14)} Exportar CSV</button>
+      </div>`).join('')}
+    </div>`;
+  },
+
+  indicadores(){
+    const D=DB.data;
+    const ent=D.entregas.length||1;
+    const otif = Math.round((D.entregas.filter(e=>e.status==='Concluída').length/ent)*100);
+    const indicadores=[
+      {label:'OTIF',val:otif+'%',icon:'target'},
+      {label:'Nível de Serviço',val:otif+'%',icon:'chart'},
+      {label:'Lead Time Médio',val:Utils.fmtNum(2.3,1)+' dias',icon:'clock'},
+      {label:'Custo por Km',val:Utils.fmtMoney(3.85),icon:'coin'},
+      {label:'Custo por Entrega',val:Utils.fmtMoney(D.custos.reduce((s,c)=>s+(Number(c.valor)||0),0)/ent),icon:'coin'},
+      {label:'Ocupação da Frota',val:Math.round((D.veiculos.filter(v=>v.status==='Em Rota').length/(D.veiculos.length||1))*100)+'%',icon:'truck'},
+      {label:'Índice de Ocorrências',val:D.ocorrencias.length,icon:'alert'},
+      {label:'Consumo de Combustível',val:Utils.fmtNum(1240,0)+' L',icon:'fuel'},
+    ];
+    return `<div class="page-head"><div><h2>Indicadores</h2><p>Painel analítico de performance logística</p></div></div>
+    <div class="grid grid-4">
+      ${indicadores.map(i=>`<div class="card kpi"><div class="ic" style="background:var(--brand-light);color:var(--brand)">${ic(i.icon,19)}</div>
+        <div class="val">${i.val}</div><div class="lbl">${i.label}</div></div>`).join('')}
+    </div>`;
+  },
+
+  auditoria(){
+    const D=DB.data;
+    return `<div class="page-head"><div><h2>Auditoria</h2><p>Trilha de ações realizadas no sistema</p></div></div>
+    <div class="card"><div class="tbl-wrap">
+    ${D.auditoria.length===0?`<div class="empty-state">${ic('shield',48)}<p>Nenhum evento registrado ainda.</p></div>`:`
+    <table><thead><tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Módulo</th></tr></thead>
+    <tbody>${D.auditoria.slice(0,60).map(a=>`<tr><td>${Utils.fmtDateTime(a.data)}</td><td>${Utils.esc(a.usuario)}</td>
+      <td><span class="badge ${a.acao==='Exclusão'?'badge-danger':a.acao==='Inclusão'?'badge-ok':'badge-info'}">${a.acao}</span></td>
+      <td>${Utils.esc(a.modulo)}</td></tr>`).join('')}</tbody></table>`}
+    </div></div>`;
+  },
+
+  backup(){
+    return `<div class="page-head"><div><h2>Backup e Restore</h2><p>Exportação e importação completa da base de dados do sistema</p></div></div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="section-title">${ic('backup',18)} Backup Completo</div>
+        <p style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">Gera um arquivo JSON com todos os dados do sistema (cadastros, movimentações, auditoria e configurações), incluindo versionamento.</p>
+        <button class="btn btn-primary" onclick="BackupMod.exportar()">${ic('backup',16)} Exportar Backup (.json)</button>
+      </div>
+      <div class="card">
+        <div class="section-title">${ic('backup',18)} Restaurar Backup</div>
+        <p style="font-size:12.5px;color:var(--text-2);margin-bottom:16px">Importa um arquivo de backup previamente exportado. A versão será validada antes da restauração.</p>
+        <input type="file" id="restoreFile" accept="application/json" style="margin-bottom:12px;font-size:12.5px">
+        <button class="btn btn-danger" onclick="BackupMod.restaurar()">${ic('backup',16)} Restaurar (substitui os dados atuais)</button>
+      </div>
+    </div>`;
+  },
+
+  configuracoes(){
+    const c = DB.data.config;
+    return `<div class="page-head"><div><h2>Configurações</h2><p>Parâmetros gerais do sistema e da empresa</p></div></div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="section-title">Empresa</div>
+        <div class="field"><label>Nome da Empresa</label><input id="cfgEmpresa" value="${Utils.esc(c.empresa)}"></div>
+        <div class="field"><label>Moeda</label><select id="cfgMoeda"><option ${c.moeda==='BRL'?'selected':''}>BRL</option><option ${c.moeda==='USD'?'selected':''}>USD</option></select></div>
+        <button class="btn btn-primary" onclick="ConfigMod.salvar()">Salvar Configurações</button>
+      </div>
+      <div class="card">
+        <div class="section-title">Usuário Atual</div>
+        <div style="font-size:13px;margin-bottom:6px"><b>${Utils.esc(Auth.currentUser.nome)}</b></div>
+        <div style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">Perfil: ${Auth.currentUser.perfil}</div>
+        <button class="btn btn-ghost btn-sm" onclick="ConfigMod.trocarSenha()">Alterar Minha Senha</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      ${Crud.render({col:'usuarios',title:'Usuários do Sistema',subtitle:'Controle de acesso e perfis',icon:'shield',columns:ModuleCols.usuarios})}
+    </div>`;
+  },
+
+  ajuda(){
+    return `<div class="page-head"><div><h2>Ajuda</h2><p>Guia rápido de uso do sistema</p></div></div>
+    <div class="card">
+      <div class="section-title">Atalhos e Navegação</div>
+      <ul style="font-size:13px;line-height:2;padding-left:18px;color:var(--text-2)">
+        <li>Use o menu lateral para navegar entre os módulos; a pesquisa filtra por nome do módulo.</li>
+        <li>Clique no ícone de hambúrguer para recolher/expandir o menu no desktop, ou abrir/fechar em dispositivos móveis.</li>
+        <li>O ícone de sol/lua alterna entre tema claro e escuro.</li>
+        <li>Todos os dados são armazenados localmente no navegador (LocalStorage) — utilize Backup e Restore para preservar suas informações.</li>
+      </ul>
+    </div>`;
+  }
+};
+
+/* ==========================================================================
+   MÓDULO: DADOS DE DEMONSTRAÇÃO (Seed)
+   ========================================================================== */
+const Seed = {
+  run(){
+    if(DB.data.clientes.length>0) return; // já populado
+    const cidades=[['Campinas','SP'],['São Paulo','SP'],['Valinhos','SP'],['Sorocaba','SP'],['Ribeirão Preto','SP'],
+      ['Curitiba','PR'],['Belo Horizonte','MG'],['Rio de Janeiro','RJ'],['Uberlândia','MG'],['Londrina','PR'],
+      ['Jundiaí','SP'],['Piracicaba','SP'],['Santos','SP'],['Bauru','SP'],['Franca','SP']];
+    for(let i=1;i<=15;i++){
+      const [cid,uf]=cidades[i-1];
+      DB.insert('clientes',{nome:`Cliente ${cid} ${i.toString().padStart(2,'0')}`,documento:`0${i}.234.567/0001-${10+i}`,
+        contato:'Contato '+i, telefone:`(19) 9${Utils.rand(1000,9999)}-${Utils.rand(1000,9999)}`, cidade:cid, uf,
+        endereco:`Rua das Cargas, ${Utils.rand(100,999)}`, ativo: i%7!==0});
+    }
+    const transp=['TransLog Express','Rodo Brasil Cargas','Veloz Transportes','Mega Frota','Cargo Sul','Norte Sul Log',
+      'AgroCargas','Prime Logística','Star Transportes','Central Fretes','Global Rodoviário','Metrópole Cargas',
+      'Vale Express','Sudeste Log','Nacional Transportes'];
+    transp.forEach((n,i)=>DB.insert('transportadoras',{nome:n,cnpj:`1${i}.345.678/0001-${20+i}`,contato:'Operações',
+      telefone:`(11) 3${Utils.rand(100,999)}-${Utils.rand(1000,9999)}`,
+      tipo:['Frota Própria','Terceirizada','Agregado'][i%3], avaliacao:Utils.rand(3,5), ativo:true}));
+    const nomes=['Carlos Souza','Marcos Lima','Roberto Alves','José Pereira','Antonio Silva','Paulo Costa','Ricardo Santos',
+      'Fernando Oliveira','Eduardo Mendes','Sérgio Rocha','Wagner Dias','Rafael Nunes','Anderson Melo','Marcelo Teixeira','Bruno Cardoso'];
+    nomes.forEach((n,i)=>DB.insert('motoristas',{nome:n,cnh:`${Utils.rand(10000000000,99999999999)}`,categoria:['B','C','D','E'][i%4],
+      telefone:`(19) 9${Utils.rand(1000,9999)}-${Utils.rand(1000,9999)}`, validadeCnh:'2027-0'+((i%9)+1)+'-15',
+      transportadora:transp[i%transp.length], ativo:i%8!==0}));
+    const tiposVeic=['Van','Caminhão Toco','Caminhão Truck','Carreta','Utilitário'];
+    for(let i=1;i<=15;i++){
+      DB.insert('veiculos',{placa:`BR${Utils.rand(10,99)}${['A','B','C','D'][i%4]}${Utils.rand(10,99)}`,
+        modelo:['Mercedes Accelo','VW Delivery','Iveco Daily','Scania R450','Fiat Ducato'][i%5],
+        tipo:tiposVeic[i%tiposVeic.length], capacidadeKg:Utils.rand(1000,25000), ano:2018+Utils.rand(0,7),
+        docVencido:i%9===0, status:['Disponível','Em Rota','Manutenção'][i%3]});
+    }
+    const regioes=['Campinas/SP','Grande SP','Interior SP','Sul de Minas','Paraná','Rio de Janeiro'];
+    for(let i=1;i<=15;i++){
+      const [oc,ouf]=cidades[i-1]; const [dc,duf]=cidades[(i+3)%cidades.length];
+      DB.insert('rotas',{nome:`Rota ${oc}-${dc}`,origem:oc+'/'+ouf,destino:dc+'/'+duf,
+        distanciaKm:Utils.rand(30,650), tempoEstimadoH:Utils.rand(1,12), regiao:regioes[i%regioes.length]});
+    }
+    ['CD Campinas Matriz','CD São Paulo Zona Leste','CD Sorocaba','CD Ribeirão Preto','CD Curitiba','CD Belo Horizonte'].forEach((n,i)=>{
+      DB.insert('centros',{nome:n, cidade:n.replace('CD ',''), uf:['SP','SP','SP','SP','PR','MG'][i], capacidadeM3:Utils.rand(2000,12000), responsavel:nomes[i]});
+    });
+    const etapas=['Separação','Conferência','Romaneio','Liberado'];
+    for(let i=1;i<=15;i++){
+      DB.insert('expedicoes',{numero:1000+i, cliente:'Cliente '+cidades[i%cidades.length][0]+' '+i.toString().padStart(2,'0'),
+        pedido:`PED-${2000+i}`, volumes:Utils.rand(1,40), data:`2026-07-${(i%28+1).toString().padStart(2,'0')}`, etapa:etapas[i%4]});
+    }
+    for(let i=1;i<=15;i++){
+      DB.insert('cargas',{codigo:`VG-${3000+i}`, veiculo:DB.data.veiculos[i%15].placa, motorista:nomes[i%15],
+        rota:DB.data.rotas[i%15].nome, pesoKg:Utils.rand(200,18000), km:DB.data.rotas[i%15].distanciaKm,
+        frete:Utils.rand(300,4500), status:['Programada','Em Andamento','Concluída'][i%3]});
+    }
+    const statusEnt=['Pendente','Em Trânsito','Concluída','Atrasada'];
+    for(let i=1;i<=18;i++){
+      DB.insert('entregas',{codigo:`ENT-${4000+i}`, cliente:'Cliente '+cidades[i%cidades.length][0]+' '+((i%15)+1).toString().padStart(2,'0'),
+        endereco:`Av. das Entregas, ${Utils.rand(100,999)} - ${cidades[i%cidades.length][0]}`,
+        dataPrevista:`2026-07-${(i%28+1).toString().padStart(2,'0')}`, status:statusEnt[i%4], leadTimeDias:Utils.rand(1,5)});
+    }
+    const ocTipos=['Avaria','Extravio','Atraso','Recusa de Recebimento','Divergência de Volumes'];
+    for(let i=1;i<=8;i++){
+      DB.insert('ocorrencias',{tipo:ocTipos[i%ocTipos.length], descricao:`Ocorrência registrada na entrega ENT-${4000+i}: ${ocTipos[i%ocTipos.length]} identificado(a) durante a conferência.`,
+        data:`2026-07-${(i%28+1).toString().padStart(2,'0')}`});
+    }
+    for(let i=1;i<=15;i++){
+      DB.insert('estoque',{produto:`Produto Logístico ${i.toString().padStart(2,'0')}`, localizacao:`A-${Utils.rand(1,9)}-${Utils.rand(10,99)}`,
+        quantidade:Utils.rand(0,500), minimo:50, maximo:600});
+    }
+    const custoTipos=['Frete','Combustível','Pedágio','Manutenção','Motoristas','Depreciação','Operacional'];
+    for(let i=1;i<=20;i++){
+      DB.insert('custos',{tipo:custoTipos[i%custoTipos.length], descricao:`Lançamento de custo #${i} referente à operação de transporte`,
+        veiculo:DB.data.veiculos[i%15].placa, valor:Utils.rand(80,3200), data:`2026-07-${(i%28+1).toString().padStart(2,'0')}`});
+    }
+  }
+};
+
+/* ==========================================================================
+   BOOTSTRAP DE INICIALIZAÇÃO
+   ========================================================================== */
+window.addEventListener('DOMContentLoaded', async ()=>{
+  DB.load();
+  await Auth.ensureAdmin();
+  Seed.run();
+  UI.applyTheme();
+  if(Auth.tryRestoreSession()){
+    UI.enterApp();
+  }
+  document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginPass').focus(); });
+  document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') Auth.login(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') { Modal.close(); UI.closeMobileSidebar(); } });
+});
+
+const Router = {
+  go(key){
+    UI.currentKey = key;
+    UI.setActive(key);
+    const found = MENU.flatMap(c=>c.items.map(i=>({...i,cat:c.cat}))).find(i=>i.key===key);
+    document.getElementById('bcCat').textContent = found ? found.cat : '';
+    document.getElementById('bcTitle').textContent = found ? found.label : key;
+    const content = document.getElementById('content');
+    content.scrollTop = 0;
+    const renderer = Modules[key];
+    content.innerHTML = renderer ? renderer() : `<div class="empty-state">${ic('alert',48)}<p>Módulo não encontrado.</p></div>`;
+    if(Modules[key+'_after']) Modules[key+'_after']();
+  }
+};
+</script>
+</body>
+</html>
